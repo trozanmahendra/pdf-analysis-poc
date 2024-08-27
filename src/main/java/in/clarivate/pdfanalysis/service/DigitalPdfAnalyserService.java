@@ -18,14 +18,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
-public class PdfAnalyserService {
+public class DigitalPdfAnalyserService {
     //Loading an existing document
     public String pdfAnalyser(String pdfPath) throws IOException {
         File file = new File(pdfPath);
         PDDocument document = Loader.loadPDF(file);
         PDFTextStripper pdfStripper = new PDFTextStripper();
-        pdfStripper.setStartPage(1);
-        pdfStripper.setEndPage(1);
+//        pdfStripper.setStartPage(1);
+//        pdfStripper.setEndPage(1);
         String text = pdfStripper.getText(document);
         String[] inIdStrings = text.split("\\(\\d{2}\\)");//         "\\(\\d{2}\\)"
         List<String> list = extractMatches(text,"\\(\\d{2}\\)");
@@ -37,6 +37,11 @@ public class PdfAnalyserService {
                 .map(str -> str.replace("\n","").replace("\r","")+"\n")
                 .toList();
         List<String> concatedList = concat(list,inIds);
+        List<String> simplifiedConcatedList = splitAndAppend(text,"\\(\\d{2}\\)")
+                .stream()
+                .filter(str -> !(str.trim().startsWith("*") && str.trim().endsWith("*")))
+                .map(str -> str.replace("\n","").replace("\r","")+"\n")
+                .toList();
         document.close();
         return ("\n------------------------------All Bookmarks in pdf %s---------------------------------\n%s\n-----------------INID CODES--------------------------------------\n%s")
                 .formatted(Path.of(pdfPath).getFileName(),strings.stream().map(s -> "\n"+s).toList(),concatedList);
@@ -77,5 +82,32 @@ public class PdfAnalyserService {
             resultStrings.add(res);
         }
         return resultStrings;
+    }
+
+    public static ArrayList<String> splitAndAppend(String text, String regex) {
+        // Compile the regular expression
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(text);
+
+        // Use an ArrayList to store the modified strings
+        ArrayList<String> result = new ArrayList<>();
+
+        int lastIndex = 0;
+        while (matcher.find()) {
+            // Add the part before the match
+            result.add(text.substring(lastIndex, matcher.start()));
+
+            // Add the matched string along with the string that immediately follows it
+            result.add(matcher.group() + text.substring(matcher.end(), Math.min(matcher.end() + 1, text.length())));
+
+            lastIndex = matcher.end();
+        }
+
+        // Add the remaining part of the string
+        if (lastIndex < text.length()) {
+            result.add(text.substring(lastIndex));
+        }
+
+        return result;
     }
 }

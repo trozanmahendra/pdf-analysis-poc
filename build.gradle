@@ -29,7 +29,8 @@ dependencies {
 	annotationProcessor 'org.projectlombok:lombok'
 	// https://mvnrepository.com/artifact/org.apache.pdfbox/pdfbox
 	implementation group: 'org.apache.pdfbox', name: 'pdfbox', version: '3.0.2'
-
+	// https://mvnrepository.com/artifact/org.bytedeco/tesseract-platform
+	implementation group: 'org.bytedeco', name: 'tesseract-platform', version: '5.3.1-1.5.9'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
