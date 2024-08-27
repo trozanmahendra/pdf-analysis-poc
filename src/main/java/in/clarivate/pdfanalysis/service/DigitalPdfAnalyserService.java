@@ -43,7 +43,7 @@ public class DigitalPdfAnalyserService {
                 .map(str -> str.replace("\n","").replace("\r","")+"\n")
                 .toList();
         document.close();
-        return ("\n------------------------------All Bookmarks in pdf %s---------------------------------\n%s\n-----------------INID CODES--------------------------------------\n%s")
+        return ("\n------------------------------All Bookmarks in pdf %s---------------------------\n%s\n-----------------INID CODES--------------------------------------\n%s")
                 .formatted(Path.of(pdfPath).getFileName(),strings.stream().map(s -> "\n"+s).toList(),concatedList);
     }
 
