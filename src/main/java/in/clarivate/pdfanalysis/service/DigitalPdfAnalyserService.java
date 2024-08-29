@@ -11,9 +11,7 @@ import org.springframework.stereotype.Service;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +25,9 @@ public class DigitalPdfAnalyserService {
 //        pdfStripper.setStartPage(1);
 //        pdfStripper.setEndPage(1);
         String text = pdfStripper.getText(document);
-        String[] inIdStrings = text.split("\\(\\d{2}\\)");//         "\\(\\d{2}\\)"
-        List<String> list = extractMatches(text,"\\(\\d{2}\\)");
+        System.out.println(text.replace("\n",""));
+        String[] inIdStrings = text.split("\\(\\d{2,3}\\)");//         "\\(\\d{2}\\)"
+        List<String> list = extractMatches(text,"\\(\\d{2,3}\\)");
         PDDocumentOutline outline = document.getDocumentCatalog().getDocumentOutline();
         List<String> bookmarks = new ArrayList<>();
         List<String> strings = printBookmark(outline, "", bookmarks);
@@ -47,7 +46,59 @@ public class DigitalPdfAnalyserService {
                 .formatted(Path.of(pdfPath).getFileName(),strings.stream().map(s -> "\n"+s).toList(),concatedList);
     }
 
-    public List<String> printBookmark(PDOutlineNode bookmark, String indentation, List<String> bookMarks) throws IOException {
+
+    public List<String> pdfAnalyserToGetInidCodes(String pdfPath) throws IOException {
+        File file = new File(pdfPath);
+        PDDocument document = Loader.loadPDF(file);
+        PDFTextStripper pdfStripper = new PDFTextStripper();
+//        pdfStripper.setStartPage(1);
+//        pdfStripper.setEndPage(1);
+        String text = pdfStripper.getText(document);
+        System.out.println(text.replace("\n",""));
+        String[] inIdStrings = text.split("\\(\\d{2,3}\\)");//         "\\(\\d{2}\\)"
+        List<String> list = extractMatches(text,"\\(\\d{2,3}\\)");
+        List<String> inIds = Arrays.stream(inIdStrings)
+                .filter(str -> !(str.trim().startsWith("*") && str.trim().endsWith("*")))
+                .map(str -> str.replace("\n","").replace("\r",""))
+                .toList();
+        List<String> concatedList = concat(list,inIds);
+        document.close();
+        return (concatedList);
+    }
+    public Map<String,List<String>> pdfAnalyserToGetInidCodesMap(String pdfPath) throws IOException {
+        File file = new File(pdfPath);
+        PDDocument document = Loader.loadPDF(file);
+        PDFTextStripper pdfStripper = new PDFTextStripper();
+//        pdfStripper.setStartPage(1);
+//        pdfStripper.setEndPage(1);
+        String text = pdfStripper.getText(document);
+        System.out.println(text.replace("\n",""));
+        String[] inIdStrings = text.split("\\(\\d{2,3}\\)");//         "\\(\\d{2}\\)"
+        List<String> list = extractMatches(text,"\\(\\d{2,3}\\)");
+        List<String> inIds = Arrays.stream(inIdStrings)
+                .filter(str -> !(str.trim().startsWith("*") && str.trim().endsWith("*")))
+                .map(str -> str.replace("\n","").replace("\r",""))
+                .toList();
+        Map<String,List<String>> map = createMapOfInIdCodesAndTheirValueList(list,inIds);
+        document.close();
+        return (map);
+    }
+
+    public List<String> pdfAnalyserToGetBookmarks(String pdfPath) throws IOException {
+        File file = new File(pdfPath);
+        PDDocument document = Loader.loadPDF(file);
+        PDFTextStripper pdfStripper = new PDFTextStripper();
+//        pdfStripper.setStartPage(1);
+//        pdfStripper.setEndPage(1);
+        String text = pdfStripper.getText(document);
+        System.out.println(text.replace("\n",""));
+        PDDocumentOutline outline = document.getDocumentCatalog().getDocumentOutline();
+        List<String> bookmarks = new ArrayList<>();
+        List<String> strings = printBookmark(outline, "", bookmarks);
+        document.close();
+        return (strings);
+    }
+    public List<String> printBookmark(PDOutlineNode bookmark, String indentation, List<String> bookMarks) {
         PDOutlineItem current = bookmark.getFirstChild();
 
         while (current != null) {
@@ -64,7 +115,7 @@ public class DigitalPdfAnalyserService {
         Matcher matcher = pattern.matcher(text);
 
         // Use an ArrayList to store the matches
-        ArrayList<String> matches = new ArrayList<String>();
+        ArrayList<String> matches = new ArrayList<>();
 
         // Iterate through matches and add them to the list
         while (matcher.find()) {
@@ -82,6 +133,25 @@ public class DigitalPdfAnalyserService {
             resultStrings.add(res);
         }
         return resultStrings;
+    }
+    public Map<String,List<String>> createMapOfInIdCodesAndTheirValueList(List<String> inid,List<String> value){
+        System.out.println("inids"+inid);
+        System.out.println();
+        System.out.println("value"+value);
+        if(inid.size() != value.size()) return  null;
+        Map<String,List<String>> inidCodesMap = new LinkedHashMap<>();
+        for(int i=0;i<inid.size();i++){
+            if(inidCodesMap.containsKey(inid.get(i))){
+                List<String> valList = inidCodesMap.get(inid.get(i));
+                valList.add(value.get(i));
+                inidCodesMap.put(inid.get(i),valList);
+            }else{
+                List<String> valList = new ArrayList<>();
+                valList.add(value.get(i));
+                inidCodesMap.put(inid.get(i),valList);
+            }
+        }
+        return inidCodesMap;
     }
 
     public static ArrayList<String> splitAndAppend(String text, String regex) {
